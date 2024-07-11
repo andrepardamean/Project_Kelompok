@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:project/screen/dashboard.dart';
-import 'package:project/screen/register.dart'; // Import the Register page
+import 'package:project/screen/register.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -9,11 +11,43 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   bool _obscureText = true;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _loginStatus = '';
 
   void _togglePasswordVisibility() {
     setState(() {
       _obscureText = !_obscureText;
     });
+  }
+
+  void _login() async {
+    final response = await http.post(
+      Uri.parse('http://fishmarket.great-site.net/login.php'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': _emailController.text,
+        'password': _passwordController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Dashboard()),
+        );
+      } else {
+        setState(() {
+          _loginStatus = 'Login gagal: ${data['message']}';
+        });
+      }
+    } else {
+      setState(() {
+        _loginStatus = 'Login gagal: ${response.body}';
+      });
+    }
   }
 
   @override
@@ -55,6 +89,7 @@ class _LoginState extends State<Login> {
               ),
               SizedBox(height: 40),
               TextField(
+                controller: _emailController,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25.0),
@@ -68,6 +103,7 @@ class _LoginState extends State<Login> {
               ),
               SizedBox(height: 20),
               TextField(
+                controller: _passwordController,
                 obscureText: _obscureText,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -89,7 +125,6 @@ class _LoginState extends State<Login> {
               SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
-                  // Aksi yang dilakukan saat teks "Lupa Password?" ditekan
                   print('Lupa Password? tapped');
                 },
                 child: Align(
@@ -114,15 +149,15 @@ class _LoginState extends State<Login> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Dashboard()),
-                    );
-                  },
+                  onPressed: _login,
                   child: Text('Masuk',
                       style: TextStyle(color: Colors.white, fontSize: 20)),
                 ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                _loginStatus,
+                style: TextStyle(fontSize: 16, color: Colors.red),
               ),
               SizedBox(height: 30),
               Column(
@@ -139,9 +174,7 @@ class _LoginState extends State<Login> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                Register()), // Navigate to Register page
+                        MaterialPageRoute(builder: (context) => Register()),
                       );
                     },
                     child: Text(
